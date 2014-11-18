@@ -3,7 +3,6 @@ require "nokogiri"
 require "open-uri"
 
 # crawl only page of "http"
-
 class Crawl
     def initialize(url, level)
       begin
