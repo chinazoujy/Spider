@@ -12,17 +12,22 @@ class Crawl
         puts exp
       end
     end
-    
+  
     def allLink
-      @links = @doc.search("//@href")      
+      links = getLinks(@doc)      
       @hash = Hash.new
-      @links.each do |link|
-         @hash[link] = 2 if link.to_s.include? "http" 
+      links.each do |link|
+        @hash[link['href']] = 2
       end
-      # main method
-      otherLink
+      links.each{ |link| dfsLink(link['href'],0) }
+      @hash.each {|key, value| puts "#{key} is #{value}" }
     end
     
+    def getLinks(content)
+      doc = content.css('a')
+      return doc
+    end
+   
     # dfs scan
     # number 0 : page is disable
     # number 1 : page is able
@@ -32,27 +37,28 @@ class Crawl
         if count == @level
           return 
         end
-          doc   = Nokogiri::HTML(open(url))
-          links = doc.search("//@href")
-          puts "Current scan url is :#{url}  value is #{@hash[url]}"
-          @hash[url] = 1
-          
-          if links.size == 0  
-            return
-          else
-            links.each do |link|
-              if @hash.has_key?(link)
-                @hash[link] = 1
-              else
-                @hash[link] = 2  if link.to_s.include? "http" 
-                dfsLink(link, count+1) if link.to_s.include? "http"       
-              end
+        doc   = Nokogiri::HTML(open(url))
+        links = getLinks(doc)
+        
+        puts "Current scan url is :#{url}  value is #{@hash[url]}"
+        @hash[url] = 1
+        if links.size == 0  
+          return
+        else
+          links.each do |link|
+            href = link['href']
+            if @hash.has_key?(href)
+              @hash[href] = 1
+            else
+              @hash[href] = 2 
+              dfsLink(href, count+1)
             end
           end
-        rescue => exp
-          @hash[url] = 0
-          return 
         end
+      rescue => exp
+        @hash[url] = 0
+        return 
+      end
     end
     
     # Test page can use or disable
@@ -64,22 +70,17 @@ class Crawl
         return false
       end
     end
-    
-    def otherLink
-      @links.each{ |link| dfsLink(link,0) if link.to_s.include? "http" }
-      @hash.each {|key, value| puts "#{key} is #{value}" }
-    end   
-
 end
+  
+  #$stdout.reopen("out.txt", "w")
 
-#$stdout.reopen("out.txt", "w")
+  url = "http://www.baidu.com"
+  url2 = "http://demo.aisec.cn/demo/aisec/"
 
-url = "http://www.baidu.com"
-
-# scan count of level
-level = 0
-crawl = Crawl.new(url, level)
-crawl.allLink
+  # scan count of level
+  level = 2
+  crawl = Crawl.new(url2, level)
+  crawl.allLink
 
 
 
